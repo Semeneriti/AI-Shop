@@ -1,0 +1,1 @@
+{"version":2,"defects":{"Tests\\Feature\\ProductScopeActiveTest::test_scope_active_returns_only_active_products":8},"times":{"Tests\\Feature\\ProductScopeActiveTest::test_scope_active_returns_only_active_products":0.032}}

@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Services\ElasticsearchService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
@@ -16,16 +13,6 @@ class Product extends Model
 
     public const STATUS_ACTIVE = 'active';
     public const STATUS_INACTIVE = 'inactive';
-
-    public const STATUSES = [
-        self::STATUS_ACTIVE,
-        self::STATUS_INACTIVE,
-    ];
-
-    public const STATUS_LABELS = [
-        self::STATUS_ACTIVE => 'Активен',
-        self::STATUS_INACTIVE => 'Неактивен',
-    ];
 
     protected $fillable = [
         'name',
@@ -38,57 +25,8 @@ class Product extends Model
         'status',
     ];
 
-    protected static function booted(): void
+    public function scopeActive($query)
     {
-        static::saved(function ($product) {
-            $service = app(ElasticsearchService::class);
-            $service->indexProduct($product->toSearchableArray());
-        });
-
-        static::deleted(function ($product) {
-            $service = app(ElasticsearchService::class);
-            try {
-                $service->getClient()->delete([
-                    'index' => 'products',
-                    'id' => $product->id,
-                ]);
-            } catch (\Exception $e) {
-                logger()->error('Failed to delete product from index: ' . $e->getMessage());
-            }
-        });
-    }
-
-    public function toSearchableArray(): array
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'description' => $this->description,
-            'price' => (float) $this->price,
-            'sku' => $this->sku,
-            'stock' => (int) $this->stock,
-            'status' => $this->status,
-            'created_at' => $this->created_at?->toIso8601String(),
-        ];
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(Category::class);
-    }
-
-    public function cartItems(): HasMany
-    {
-        return $this->hasMany(CartItem::class);
-    }
-
-    public function orderItems(): HasMany
-    {
-        return $this->hasMany(OrderItem::class);
-    }
-
-    public function getStatusLabelAttribute(): string
-    {
-        return self::STATUS_LABELS[$this->status] ?? $this->status;
+        return $query->where('status', self::STATUS_ACTIVE);
     }
 }
